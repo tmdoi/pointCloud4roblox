@@ -1,0 +1,77 @@
+game.Players.PlayerAdded:Connect(function(player)
+	-- リーダーボードを作成
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+
+	-- X座標の値を作成
+	local posX = Instance.new("NumberValue")
+	posX.Name = "PositionX"
+	posX.Parent = leaderstats
+
+	-- Y座標の値を作成
+	local posY = Instance.new("NumberValue")
+	posY.Name = "PositionY"
+	posY.Parent = leaderstats
+
+	-- Z座標の値を作成
+	local posZ = Instance.new("NumberValue")
+	posZ.Name = "PositionZ"
+	posZ.Parent = leaderstats
+end)
+
+
+local HttpService = game:GetService("HttpService")
+
+local url = "CSVファイルのURL.csv" -- CSVファイルのURL
+
+local success, response = pcall(function()
+	return HttpService:GetAsync(url)
+end)
+
+if success then
+	-- CSVデータを解析する関数
+	local function parseCSV(data)
+		local rows = {}
+		local count = 0
+		for line in data:gmatch("[^\r\n]+") do
+			local fields = {}
+			count = count+1
+			for field in line:gmatch("[^,]+") do
+				table.insert(fields, field)
+			end
+			table.insert(rows, fields)
+			if count % 20000 == 0 then
+				print(count)
+				task.wait()  -- 一部の処理を待機して他のスクリプトが実行されるのを許可する
+			end
+		end
+		return rows
+	end
+
+	-- CSVデータの解析
+	local parsedData = parseCSV(response)
+	
+	--print(parsedData[1][1])
+	
+	local batchSize = 20000  -- 一度に処理するデータの数
+	for i = 1, #parsedData, 1 do
+		-- print("i=" .. i)
+		local cube = Instance.new("Part")
+		cube.Size = Vector3.new(1,1,1)
+		cube.Color = Color3.fromRGB(parsedData[i][4], parsedData[i][5], parsedData[i][6])
+		cube.CFrame = CFrame.new(-1*parsedData[i][1]*3.57, (parsedData[i][3]+4.4)*3.57, parsedData[i][2]*3.57)
+		cube.Anchored = true
+		cube.Parent = workspace
+		
+		if i % batchSize == 0 then
+			task.wait()  -- 一部の処理を待機して他のスクリプトが実行されるのを許可する
+		end
+		
+	end
+	
+	print("parts=" .. #parsedData )
+	
+else
+	print("Failed to fetch data: " .. tostring(response))
+end
